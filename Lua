@@ -1,0 +1,131 @@
+local Bracket = loadstring(game:HttpGet("https://raw.githubusercontent.com/bracket-v2/library/main/source.lua"))()
+local Window = Bracket:CreateWindow({
+    Name = "Ashish Hub | Bracket V2 Edition 👑",
+    Color = Color3.fromRGB(0, 255, 255), -- Cyan theme
+    Bind = "RightControl"
+})
+
+-- [ SETTINGS ]
+_G.AimbotEnabled = false
+_G.TPWalkSpeed = 16
+_G.AdminLeave = false
+_G.TargetPlayer = nil
+_G.LockEnabled = false
+
+-- [ TAB: MAIN MOVEMENT ]
+local MainTab = Window:CreateTab("Movement")
+
+MainTab:CreateButton("Load Fly GUI (Mobile)", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.lua"))()
+end)
+
+MainTab:CreateSlider("TP Walk Speed", 16, 250, 16, function(s)
+    _G.TPWalkSpeed = s
+end)
+
+MainTab:CreateButton("Mobile Shift Lock", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/MiniNoobie/Roblox/main/Shiftlock"))()
+end)
+
+MainTab:CreateButton("No-Clip", function()
+    game:GetService("RunService").Stepped:Connect(function()
+        if game.Players.LocalPlayer.Character then
+            for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
+            end
+        end
+    end)
+end)
+
+-- [ TAB: COMBAT ]
+local CombatTab = Window:CreateTab("Combat")
+
+CombatTab:CreateToggle("Universal Aimbot", function(state)
+    _G.AimbotEnabled = state
+end)
+
+CombatTab:CreateTextBox("Player Lock (Name)", "Type name...", function(txt)
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v.Name:lower():find(txt:lower()) or v.DisplayName:lower():find(txt:lower()) then
+            _G.TargetPlayer = v
+        end
+    end
+end)
+
+CombatTab:CreateToggle("Enable Target Lock", function(state)
+    _G.LockEnabled = state
+end)
+
+CombatTab:CreateButton("FE Invisible Fling", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/GhostPlayer352/Test4/main/Invisible%20Fling"))()
+end)
+
+-- [ TAB: TELEPORT ]
+local TPTab = Window:CreateTab("Teleport")
+
+TPTab:CreateButton("Get Click TP Tool", function()
+    local mouse = game.Players.LocalPlayer:GetMouse()
+    local tool = Instance.new("Tool")
+    tool.RequiresHandle = false
+    tool.Name = "Ashish TP Tool 📍"
+    tool.Activated:Connect(function()
+        game.Players.LocalPlayer.Character:MoveTo(mouse.Hit.p + Vector3.new(0, 3, 0))
+    end)
+    tool.Parent = game.Players.LocalPlayer.Backpack
+end)
+
+-- [ TAB: VISUALS & UTILS ]
+local ExtraTab = Window:CreateTab("Visuals & Admin")
+
+ExtraTab:CreateButton("Highlight ESP", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/IratuServices/HighlightESP/main/HighlightESP.lua"))()
+end)
+
+ExtraTab:CreateButton("Infinite Yield", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source'))()
+end)
+
+ExtraTab:CreateToggle("Leave on Admin Join", function(state)
+    _G.AdminLeave = state
+end)
+
+-- [ CORE LOGIC ]
+game:GetService("RunService").RenderStepped:Connect(function()
+    local Camera = workspace.CurrentCamera
+    local LP = game.Players.LocalPlayer
+    
+    -- Aimbot
+    if _G.AimbotEnabled then
+        local target = nil
+        local dist = 200
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
+                local pos, screen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                if screen then
+                    local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if mDist < dist then dist = mDist; target = p end
+                end
+            end
+        end
+        if target then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position) end
+    end
+
+    -- Player Lock
+    if _G.LockEnabled and _G.TargetPlayer and _G.TargetPlayer.Character then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, _G.TargetPlayer.Character.HumanoidRootPart.Position)
+    end
+    
+    -- TP Walk
+    local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
+    if hum and hum.MoveDirection.Magnitude > 0 then
+        LP.Character:TranslateBy(hum.MoveDirection * ((_G.TPWalkSpeed or 16) / 50))
+    end
+end)
+
+-- Admin Join
+game.Players.PlayerAdded:Connect(function(p)
+    if _G.AdminLeave and p:GetRankInGroup(120) >= 100 then
+        game.Players.LocalPlayer:Kick("⚠️ Admin Join Alert!")
+    end
+end)
+
